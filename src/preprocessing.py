@@ -17,53 +17,6 @@ def load_yolo_txt(file_path):
             bboxes.append([class_id] + coords)    
     return bboxes
 
-def createRawTrainList():
-    """
-    Tạo hashmap: key = path ảnh, value = list bbox từ file txt cùng tên
-    """
-    Cls = ["Glioma", "Meningioma", "NoTumor", "Pituitary"]
-    trainList = []
-    for tumorcls in Cls:
-        data_dir = Path("data/raw/Train") / tumorcls  # thư mục Train/Glioma ...
-        print(f"Thư mục {tumorcls} tồn tại:", data_dir.exists())
-        if not data_dir.exists():
-            continue
-        img_dir = data_dir / "images"
-        label_dir = data_dir / "labels"
-        img_list = list(img_dir.glob("*.jpg"))
-        for img_path in img_list:
-            # Lấy file txt cùng tên
-            txt_path = label_dir / (img_path.stem + ".txt")
-            bboxes = load_yolo_txt(txt_path)
-            trainList.append((str(img_path), bboxes))
-    return trainList
-
-
-def createRawValList():
-    """
-    Tạo hashmap: key = path ảnh, value = list bbox từ file txt cùng tên
-    """
-    Cls = ["Glioma", "Meningioma", "NoTumor", "Pituitary"]
-    valList = []
-    for tumorcls in Cls:
-        data_dir = Path("data/raw/Val") / tumorcls  # thư mục Train/Glioma ...
-        print(f"Thư mục {tumorcls} tồn tại:", data_dir.exists())
-        if not data_dir.exists():
-            continue
-        img_dir = data_dir / "images"
-        label_dir = data_dir / "labels"
-        img_list = list(img_dir.glob("*.jpg"))
-        for img_path in img_list:
-            # Lấy file txt cùng tên
-            txt_path = label_dir / (img_path.stem + ".txt")
-            if not txt_path.exists():
-                print(f"Bỏ qua: {img_path.name} (không có label)")
-                continue
-            bboxes = load_yolo_txt(txt_path)
-            valList.append((str(img_path), bboxes))
-    return valList
-
-
 def createListFromPath(path):
     """
     Tạo hashmap: key = path ảnh, value = list bbox từ file txt cùng tên
