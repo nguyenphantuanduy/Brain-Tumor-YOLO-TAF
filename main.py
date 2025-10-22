@@ -1,21 +1,26 @@
-# main.py
-from src.preprocessing import*
+# ---- Giả sử bạn đã import Dataset ----
 
-if __name__ == "__main__":
-    train_list = load_list("data/train_list.pkl")
-    print(f"✅ Đã load train_list, tổng {len(train_list)} ảnh")
+import torch
 
-    # Kiểm tra 5 ảnh đầu
-    print("\n--- 5 ảnh đầu ---")
-    for i, (img_path, bboxes) in enumerate(train_list[:5]):
-        print(f"\nẢnh {i+1}: {img_path}")
-        print(f"Bboxes: {bboxes}")
+from torch.utils.data import DataLoader
+from src.Dataset import Brain_Tumor_Dataset
 
-    # Kiểm tra xem có ảnh bị mất file hay bbox trống không
-    missing_imgs = [img for img, _ in train_list if not Path(img).exists()]
-    empty_bboxes = [img for img, bbox in train_list if len(bbox) == 0]
-    print(f"\nSố ảnh mất file: {len(missing_imgs)}")
-    print(f"Số ảnh bbox rỗng: {len(empty_bboxes)}")
+dataset = Brain_Tumor_Dataset(item_path="data/raw/val_list.pkl", img_size=640)
+dataloader = DataLoader(
+    dataset, 
+    batch_size=2, 
+    shuffle=False, 
+    collate_fn=lambda x: tuple(zip(*x))  # giữ labels list of tensors
+)
+
+# ---- Lấy batch đầu tiên ----
+images, labels = next(iter(dataloader))
+
+print("Images shape:", torch.stack(images).shape)  # [B, C, H, W]
+print("Number of labels in batch:", len(labels))
+
+print(labels)
+
 
 
 

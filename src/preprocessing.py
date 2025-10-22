@@ -1,6 +1,5 @@
 from pathlib import Path
-
-class_names = ["Glioma", "Meningioma", "NoTumor", "Pituitary"]
+from src.config import *
 
 def load_yolo_txt(file_path):
     file_path = Path(file_path)

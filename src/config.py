@@ -1,0 +1,1 @@
+class_names = ["Glioma", "Meningioma", "NoTumor", "Pituitary"]
