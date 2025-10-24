@@ -6,6 +6,7 @@ from src.model.BrainTumorv1 import BrainTumorv1
 from src.model.BrainTumorWrapper import BrainTumorWrapper
 from src.utils import *
 from src.model.MyBrainTumorWrapper import MyBrainTumorWrapper
+from src.preprocessing import *
 
 def cls_loss_fn(pred, target):
     target = target.long()  # ép sang Long
@@ -55,6 +56,18 @@ def test02():
                             shuffle=True, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
     myWrapper = MyBrainTumorWrapper(model)
     myWrapper.fit(main_loader, epochs = 1, patience = 3, mode = "Sustain")
+
+def test03():
+    val_list = []
+    test_list = []
+    total_list = load_list("data/raw/val_list.pkl")
+    spilt_list = split_by_class(total_list)
+    for key, value in spilt_list.items():
+        mid = len(value) // 2
+        val_list = val_list + value[:mid]
+        test_list = test_list + value[mid:]
+    save_list(val_list, "data/val_list.pkl")
+    save_list(test_list, "data/test_list.pkl")
 if __name__ == "__main__":
     torch.multiprocessing.freeze_support()  # cần cho Windows
-    test02()
+    test03()
