@@ -2,9 +2,12 @@ import torch
 import cv2
 
 def yolo_collate_fn(batch):
-    imgs = torch.stack([x[0] for x in batch], dim=0)  # tất cả ảnh phải cùng H,W
-    labels = [x[1] for x in batch]  # giữ list, mỗi phần tử tensor [num_bbox, 5]
-    return imgs, labels
+    # batch là list của ((image_path, image_tensor), label_tensor)
+    imgs = torch.stack([x[0][1] for x in batch], dim=0)  # x[0][1] = image_tensor
+    paths = [x[0][0] for x in batch]  # x[0][0] = image_path
+    labels = [x[1] for x in batch]    # label_tensor
+    return paths, imgs, labels
+
 
 def visualize_mri_prediction(image_path, boxes, scores, labels, class_names=None):
     """
@@ -32,26 +35,25 @@ def visualize_mri_prediction(image_path, boxes, scores, labels, class_names=None
     return img
 
 def yolo_to_xyxy(x, y, w, h, img_size):
-    if isinstance(img_size, int):
-        W = H = img_size
-    else:
-        H, W = img_size
+        if isinstance(img_size, int):
+            H = W = img_size
+        else:
+            H, W = img_size
 
-    # Convert
-    x1 = (x - w / 2) * W
-    y1 = (y - h / 2) * H
-    x2 = (x + w / 2) * W
-    y2 = (y + h / 2) * H
+        # Đảm bảo tất cả đều là tensor (tránh trường hợp float/int)
+        device = x.device if isinstance(x, torch.Tensor) else ("cuda" if torch.cuda.is_available() else "cpu")
+        x = torch.as_tensor(x, device=device, dtype=torch.float32)
+        y = torch.as_tensor(y, device=device, dtype=torch.float32)
+        w = torch.as_tensor(w, device=device, dtype=torch.float32)
+        h = torch.as_tensor(h, device=device, dtype=torch.float32)
+        # Tính toán bằng broadcast (chạy được cả batch)
+        x1 = (x - w / 2) * W
+        y1 = (y - h / 2) * H
+        x2 = (x + w / 2) * W
+        y2 = (y + h / 2) * H
 
-    # Stack lại
-    converted = torch.stack([x1, y1, x2, y2])
+        converted = torch.stack([x1, y1, x2, y2], dim=-1)
+        converted = torch.clamp(converted, min=0, max=max(W-1,H-1))
 
-    # Clamp out-of-place (không dùng inplace)
-    converted = torch.stack([
-        converted[0].clamp(0, W - 1),
-        converted[1].clamp(0, H - 1),
-        converted[2].clamp(0, W - 1),
-        converted[3].clamp(0, H - 1)
-    ])
 
-    return converted
+        return converted

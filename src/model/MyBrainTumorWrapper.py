@@ -12,9 +12,9 @@ class MyBrainTumorWrapper:
         self.img_size = img_size
         # ======= Training phases =======
         # Loss functions
-        loss_mse = nn.MSELoss()
-        loss_ce = CEWrapper()
-        loss_bce = nn.BCEWithLogitsLoss()
+        loss_mse = MSEWrapper(num_classes)
+        loss_ce = CEWrapper(num_classes)
+        loss_bce = BCEWrapper(1)
         # from src.losses import CIoULoss, GIoULoss, VarifocalLoss
         loss_ciou = CIoULossWrapper(device, img_size)
         loss_giou = GIoULossWrapper(device, img_size)
@@ -33,6 +33,8 @@ class MyBrainTumorWrapper:
         # Phase 3: Sustain
         optimizer_sustain = optim.AdamW(params=model.parameters(), lr=1e-4)
         scheduler_sustain = optim.lr_scheduler.CosineAnnealingLR(optimizer_sustain, T_max=50)
+
+        self.wrapper.compile(optimizer_warmup, loss_mse, loss_ce, loss_bce, scheduler_warmup)
 
         # Training phases dict
         self.training_phases = {
@@ -66,7 +68,6 @@ class MyBrainTumorWrapper:
                             objness_loss= self.training_phases[mode]["loss_objness"],
                             scheduler = self.training_phases[mode]["scheduler"])
         self.wrapper.fit(train_loader, val_loader, epochs, patience)
-
     def evaluate(self, val_loader, verbose=True):
         return self.wrapper.evaluate(val_loader, verbose)
 
@@ -81,4 +82,11 @@ class MyBrainTumorWrapper:
     
     def img_predict(self, path, class_names=class_names):
         self.wrapper.img_predict(path, class_names)
+
+    def compile(self, mode="Warm-up"):
+        self.wrapper.compile(optimizer = self.training_phases[mode]["optimizer"], 
+                            reg_loss = self.training_phases[mode]["loss_reg"], 
+                            cls_loss = self.training_phases[mode]["loss_cls"],
+                            objness_loss= self.training_phases[mode]["loss_objness"],
+                            scheduler = self.training_phases[mode]["scheduler"])
 
