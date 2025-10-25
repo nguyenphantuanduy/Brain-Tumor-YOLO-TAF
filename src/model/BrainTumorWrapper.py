@@ -693,9 +693,9 @@ class BrainTumorWrapper:
                     keep_scores = keep_scores[mask]
                     keep_cls = keep_cls[mask]
 
-                    # Giữ tối đa 15 bbox
-                    if len(keep_scores) > 15:
-                        topk_scores, topk_idx = torch.topk(keep_scores, 15)
+                    # Giữ tối đa 5 bbox
+                    if len(keep_scores) > 5:
+                        topk_scores, topk_idx = torch.topk(keep_scores, 5)
                         keep_boxes = keep_boxes[topk_idx]
                         keep_scores = topk_scores
                         keep_cls = keep_cls[topk_idx]
@@ -771,9 +771,9 @@ class BrainTumorWrapper:
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]
 
-            # Giữ tối đa 15 bbox
-            if len(keep_scores) > 15:
-                topk_scores, topk_idx = torch.topk(keep_scores, 15)
+            # Giữ tối đa 5 bbox
+            if len(keep_scores) > 5:
+                topk_scores, topk_idx = torch.topk(keep_scores, 5)
                 keep_boxes = keep_boxes[topk_idx]
                 keep_scores = topk_scores
                 keep_cls = keep_cls[topk_idx]
