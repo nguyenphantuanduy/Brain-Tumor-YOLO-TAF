@@ -15,11 +15,17 @@ class CIoULossWrapper(nn.Module):
         """
         pred, target: (4, N) -> x,y,w,h
         """
+
         pred = pred.clone()
         target = target.clone()
 
         pred_xyxy = yolo_to_xyxy(pred[0,:], pred[1,:], pred[2,:], pred[3,:], self.img_size).to(self.device)
         target_xyxy = yolo_to_xyxy(target[0,:], target[1,:], target[2,:], target[3,:], self.img_size).to(self.device)
+
+        # if torch.isnan(pred_xyxy).any():
+        #     print("NaN in pred_xyxy!")
+        # if torch.isnan(target_xyxy).any():
+        #     print("NaN in target_xyxy!")
 
         # Clamp giá trị để tránh box lỗi
         pred_xyxy = torch.clamp(pred_xyxy, min=0.0)
@@ -43,6 +49,11 @@ class CIoULossWrapper(nn.Module):
 
         ciou_loss = diou_loss + alpha * v
         ciou_loss = torch.nan_to_num(ciou_loss, nan=0.0, posinf=0.0, neginf=0.0)
+        # if torch.isnan(ciou_loss).any() or torch.isinf(ciou_loss).any():
+        #     print("NaN/Inf in CIoU loss!")
+        #     print("diou_loss:", diou_loss)
+        #     print("alpha:", alpha)
+        #     print("v:", v)
 
         return ciou_loss.mean()
 

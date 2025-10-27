@@ -410,6 +410,7 @@ class BrainTumorWrapper:
                 batch_loss = batch_loss / len(targets)
                 # print(batch_loss)
                 batch_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
                 self.optimizer.step()
                 epoch_loss += batch_loss.item()
 
@@ -709,7 +710,7 @@ class BrainTumorWrapper:
 
                     batch_loss = batch_loss + sample_loss  
                     # print(f"Sample {i} loss: {sample_loss.item()}")   
-
+                
                 # Cập nhật mAP
                 batch_loss = batch_loss/len(targets)
                 # print(f"Batch {i} loss: {batch_loss.item()}")  

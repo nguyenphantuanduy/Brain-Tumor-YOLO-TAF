@@ -8,6 +8,9 @@ from src.utils import *
 from src.model.MyBrainTumorWrapper import MyBrainTumorWrapper
 from src.preprocessing import *
 from src.model.LossWrapper import *
+from src.model.BrainTumorv2 import BrainTumorv2
+from src.model.BrainTumorv3 import BrainTumorv3
+from src.model.BrainTumorv4 import BrainTumorv4
 
 # def cls_loss_fn(pred, target):
 #     target = target.long()  # ép sang Long
@@ -77,18 +80,14 @@ if __name__ == "__main__":
     # val_dataset = Brain_Tumor_Dataset("data/val_list.pkl")
     # val_dataloader = DataLoader(dataset=val_dataset, batch_size=8,
     #                 shuffle=False, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
-    # model = BrainTumorv1()
-    # myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv1.pth.tar")
-    # myWrapper.fit(train_dataloader, val_dataloader, 70, 5, "Sustain")
+    # model = BrainTumorv4()
+    # myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv4.pth.tar")
+    # myWrapper.fit(train_dataloader, val_dataloader, 50, 10, "Sustain")
 
-    # val_dataset = Brain_Tumor_Dataset("data/test_list.pkl")
-    # val_dataloader = DataLoader(dataset=val_dataset, batch_size=8,
-    #                 shuffle=False, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
-    # model = BrainTumorv1()
-    # myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv1.pth.tar")
-    # myWrapper.compile("Sustain")
-    # myWrapper.evaluate(val_dataloader, True)
-    
-    Llist = load_list("data/test_list.pkl")
-    n = max([len(x) for _, x in Llist])
-    print(n)
+    test_dataset = Brain_Tumor_Dataset("data/test_list.pkl")
+    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+                    shuffle=False, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
+    model = BrainTumorv4()
+    myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv4.pth.tar")
+    myWrapper.compile("Sustain")
+    myWrapper.evaluate(test_dataloader, True)
