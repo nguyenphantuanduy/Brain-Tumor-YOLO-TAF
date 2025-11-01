@@ -6,6 +6,7 @@ from src.config import *
 from torchvision.ops import nms
 from torchvision.ops import batched_nms
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+# from mean_average_precision import MetricBuilder
 from torchvision.ops import box_iou
 from PIL import Image
 import numpy as np
@@ -504,6 +505,7 @@ class BrainTumorWrapper:
         self.model.eval()
         total_loss = 0.0
         metric_map = MeanAveragePrecision().to(self.device)
+        # metric_fn = MetricBuilder.build_evaluation_metric("map_2d", num_classes=4)
 
         with torch.no_grad():
             for paths, imgs, targets in tqdm(val_loader, desc="Evaluating", disable=not verbose):
@@ -624,6 +626,10 @@ class BrainTumorWrapper:
                         gt_labels_tensor = gt_labels.to(self.device)
 
                     gts_for_metric.append({"boxes":gt_boxes_tensor, "labels":gt_labels_tensor})
+                    # gt_combined = torch.cat([gt_boxes_tensor, gt_labels_tensor.unsqueeze(1)], dim=1)
+                    # iscrowd = torch.zeros((gt_combined.shape[0], 1), device=gt_combined.device)
+                    # image_ids_gt = torch.full((gt_combined.shape[0], 1), idx, device=gt_combined.device)
+                    # gt_combined_full = torch.cat([gt_combined, iscrowd, image_ids_gt], dim=1)
 
                     # pred_boxes_nms = []
                     # pred_score_nms = []
@@ -689,7 +695,8 @@ class BrainTumorWrapper:
                     keep_cls = pred_cls_nms[keep]
 
                     # Lọc theo threshold 0.6
-                    mask = keep_scores > 0.6
+                    # mask = torch.sigmoid(keep_scores) > 0.6
+                    mask = torch.sigmoid(keep_scores) > 6
                     keep_boxes = keep_boxes[mask]
                     keep_scores = keep_scores[mask]
                     keep_cls = keep_cls[mask]
@@ -707,7 +714,14 @@ class BrainTumorWrapper:
                     keep_cls_tensor = keep_cls.to(self.device)
 
                     preds_for_metric.append({"boxes":keep_boxes_tensor, "scores":keep_scores_tensor, "labels":keep_cls_tensor})
-
+                    # pred_combined = torch.cat([
+                    #                 keep_boxes_tensor,
+                    #                 keep_scores_tensor.unsqueeze(1),
+                    #                 keep_cls_tensor.unsqueeze(1)
+                    #                 ], dim=1)
+                    # image_ids_pred = torch.full((pred_combined.shape[0], 1), idx, device=pred_combined.device)
+                    # pred_combined_full = torch.cat([pred_combined, image_ids_pred], dim=1)
+                                
                     batch_loss = batch_loss + sample_loss  
                     # print(f"Sample {i} loss: {sample_loss.item()}")   
                 
@@ -717,15 +731,21 @@ class BrainTumorWrapper:
 
                 total_loss += batch_loss
                 metric_map.update(preds_for_metric, gts_for_metric)
+                # metric_fn.add(
+                #         pred_combined.detach().cpu().numpy(),
+                #         gt_combined_full.detach().cpu().numpy()
+                #         )
 
         # Tính trung bình loss và mAP
         avg_loss = total_loss / len(val_loader)
         map_results = metric_map.compute()
+        # res = metric_fn.value(iou_thresholds=[0.5])
+        # print("Precision:", res["precision"])
+        # print("Recall:", res["recall"])
 
         if verbose:
             print(f"Validation loss: {avg_loss:.4f}")
-            print(f"mAP@0.5: {map_results['map_50']:.4f}, mAP@0.5:0.95: {map_results['map']:.4f}")
-
+            print(f"mAP@0.5: {map_results['map_50']:.4f}, mAP@0.5:0.95: {map_results['map']:.4f}")            
         return {"val_loss": avg_loss, "mAP": map_results}
 
 
@@ -741,33 +761,46 @@ class BrainTumorWrapper:
             output = []
             for (num_layer, layer) in zip(range(len(outputs)), outputs):
                 output.append(self.head_to_yolo(layer[0], self.strides[num_layer], self.img_size))
-            pred_boxes_nms = []
-            pred_score_nms = []
-            pred_cls_nms = []
-            for fmap_idx, fmap in enumerate(output):
-                H, W = fmap.shape[1], fmap.shape[2]
-                for i in range(H):
-                    for j in range(W):
-                        pred = output[fmap_idx][:, i, j]
-                        x, y, w, h = pred[:4]
-                        pred_obj = pred[4:5]
-                        pred_cls = pred[5:]
-                        pred_boxes_nms.append(self.yolo_to_xyxy(x, y, w, h, self.img_size))
-                        score = (pred_obj * torch.max(pred_cls)).squeeze()  # đảm bảo 0D scalar
-                        pred_score_nms.append(score)
-                        pred_cls_nms.append(torch.argmax(pred_cls))
+            output_tensor = torch.cat([fmap.flatten(1) for fmap in output], dim=1)
+            # pred_boxes_nms = []
+            # pred_score_nms = []
+            # pred_cls_nms = []
+
+            # for fmap_idx, fmap in enumerate(output):
+            #     H, W = fmap.shape[1], fmap.shape[2]
+            #     for i in range(H):
+            #         for j in range(W):
+            #             pred = output[fmap_idx][:, i, j]
+            #             x, y, w, h = pred[:4]
+            #             pred_obj = pred[4:5]
+            #             pred_cls = pred[5:]
+            #             pred_boxes_nms.append(self.yolo_to_xyxy(x, y, w, h, self.img_size))
+            #             score = (pred_obj * torch.max(pred_cls)).squeeze()  # đảm bảo 0D scalar
+            #             pred_score_nms.append(score)
+            #             pred_cls_nms.append(torch.argmax(pred_cls))
                                 
 
-            pred_boxes_nms = torch.stack(pred_boxes_nms).to(self.device)
-            pred_score_nms = torch.stack(pred_score_nms).to(self.device)
-            pred_cls_nms = torch.stack(pred_cls_nms).to(self.device)
+            # pred_boxes_nms = torch.stack(pred_boxes_nms).to(self.device)
+            # pred_score_nms = torch.stack(pred_score_nms).to(self.device)
+            # pred_cls_nms = torch.stack(pred_cls_nms).to(self.device)
+
+            pred_boxes_nms = self.yolo_to_xyxy(
+                                output_tensor[0, :],  # x
+                                output_tensor[1, :],  # y
+                                output_tensor[2, :],  # w
+                                output_tensor[3, :],  # h
+                                self.img_size
+                        )  # Kết quả có shape (num_no_gt, 4)
+            pred_score_nms = output_tensor[4, :]
+            pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
+
             keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.5)
             keep_boxes = pred_boxes_nms[keep]
             keep_scores = pred_score_nms[keep]
             keep_cls = pred_cls_nms[keep]
 
             # Lọc theo threshold 0.6
-            mask = keep_scores > 0.6
+            mask = torch.sigmoid(keep_scores) > 0.6
             keep_boxes = keep_boxes[mask]
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]

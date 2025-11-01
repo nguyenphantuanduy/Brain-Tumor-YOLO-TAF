@@ -164,6 +164,25 @@ def img_augment(train_list, save_path):
     print(f"✅ Đã augment xong {counter} ảnh và lưu vào {save_path}")
 
 
+def createListFromPath02(path):
+    """
+    Tạo hashmap: key = path ảnh, value = list bbox từ file txt cùng tên
+    """
+    itemList = []
+    data_dir = Path(path)
+    img_dir = data_dir / "images"
+    label_dir = data_dir / "labels"
+    img_list = list(img_dir.glob("*.jpg"))
+    for img_path in img_list:
+        # Lấy file txt cùng tên
+        txt_path = label_dir / (img_path.stem + ".txt")
+        if not txt_path.exists():
+            print(f"Bỏ qua: {img_path.name} (không có label)")
+            continue
+        bboxes = load_yolo_txt(txt_path)
+        itemList.append((str(img_path), bboxes))
+    return itemList
+
     
 
 

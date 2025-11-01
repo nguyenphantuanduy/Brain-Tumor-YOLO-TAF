@@ -74,8 +74,7 @@ class BrainTumorv2(nn.Module):
         print("Backbone và Neck đã được thiết lập theo yêu cầu (freeze, fine-tune, reset).")
 
 
-        
-
+    
     def forward(self, x):
         # --- Backbone ---
         if x.shape[1] == 1:

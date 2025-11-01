@@ -11,7 +11,12 @@ from src.model.LossWrapper import *
 from src.model.BrainTumorv2 import BrainTumorv2
 from src.model.BrainTumorv3 import BrainTumorv3
 from src.model.BrainTumorv4 import BrainTumorv4
-
+from src.model.BrainTumorv5 import BrainTumorv5
+from src.model.BrainTumorv6 import BrainTumorv6
+from src.model.MyBrainTumorWrapperv2 import MyBrainTumorWrapperv2
+from src.model.MyBrainTumorWrapperv3 import MyBrainTumorWrapperv3
+from src.model.MyBrainTumorWrapperv4 import MyBrainTumorWrapperv4
+from src.model.BrainTumorv7 import BrainTumorv7
 # def cls_loss_fn(pred, target):
 #     target = target.long()  # ép sang Long
 #     return nn.CrossEntropyLoss()(pred.unsqueeze(0), target.unsqueeze(0))
@@ -73,21 +78,72 @@ from src.model.BrainTumorv4 import BrainTumorv4
 #     save_list(val_list, "data/val_list.pkl")
 #     save_list(test_list, "data/test_list.pkl")
 
-if __name__ == "__main__":
-    # train_dataset = Brain_Tumor_Dataset("data/train_list.pkl")
-    # train_dataloader = DataLoader(dataset=train_dataset, batch_size=8,
-    #                 shuffle=True, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
-    # val_dataset = Brain_Tumor_Dataset("data/val_list.pkl")
-    # val_dataloader = DataLoader(dataset=val_dataset, batch_size=8,
-    #                 shuffle=False, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
-    # model = BrainTumorv4()
-    # myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv4.pth.tar")
-    # myWrapper.fit(train_dataloader, val_dataloader, 50, 10, "Sustain")
+import random
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
 
-    test_dataset = Brain_Tumor_Dataset("data/test_list.pkl")
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
-                    shuffle=False, num_workers=10, pin_memory=True, collate_fn=yolo_collate_fn)
-    model = BrainTumorv4()
-    myWrapper = MyBrainTumorWrapper(model, CKPT_PATH="experiments/BrainTumorv4.pth.tar")
-    myWrapper.compile("Sustain")
-    myWrapper.evaluate(test_dataloader, True)
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+if __name__ == "__main__":
+    SEED = 42
+    set_seed(SEED)
+
+    # --- Tạo generator cho DataLoader ---
+    g = torch.Generator()
+    g.manual_seed(SEED)
+
+    train_dataset = Brain_Tumor_Dataset("data/total_train_list.pkl")
+    train_dataloader = DataLoader(
+        dataset=train_dataset, batch_size=8,
+        shuffle=True, num_workers=0, pin_memory=False,
+        collate_fn=yolo_collate_fn,
+        generator=g  # shuffle deterministic
+    )
+
+    val_dataset = Brain_Tumor_Dataset("data/total_val_list.pkl")
+    val_dataloader = DataLoader(
+        dataset=val_dataset, batch_size=8,
+        shuffle=False, num_workers=0, pin_memory=False,
+        collate_fn=yolo_collate_fn
+    )
+
+    model = BrainTumorv5()
+    myWrapper = MyBrainTumorWrapperv4(
+        model, CKPT_PATH="experiments/BrainTumorv5_legendary.pth.tar"
+    )
+    myWrapper.fit(train_dataloader, val_dataloader, 10, 5, "Warm-up")
+
+
+    # test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
+    # test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+    #                 shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    # model = BrainTumorv4()
+    # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv4_legendary.pth.tar")
+    # myWrapper.compile("Sustain")
+    # myWrapper.evaluate(test_dataloader, True)
+
+    # model = BrainTumorv4()
+    # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv4_legendary.pth.tar")
+    # myWrapper.img_predict("data/raw/Val/Glioma/images/gg (9).jpg")
+
+    # train_list02 = createListFromPath02("data/train")
+    # val_list02 = createListFromPath02("data/valid")
+    # test_list02 = createListFromPath02("data/test")
+
+    # train_list01 = load_list("data/raw/train_list.pkl")
+    # val_list01 = load_list("data/val_list.pkl")
+    # test_list01 = load_list("data/test_list.pkl")
+
+    # save_list(train_list02 + train_list01, "data/total_train_list.pkl")
+    # save_list(val_list02 + val_list01, "data/total_val_list.pkl")
+    # save_list(test_list02 + test_list01, "data/total_test_list.pkl")
+
+    # train_list_aug = load_list("data/train_list.pkl")
+    # save_list(train_list02 + train_list_aug, "data/total_train_list_aug.pkl")

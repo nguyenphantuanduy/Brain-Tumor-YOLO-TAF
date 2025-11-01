@@ -161,6 +161,49 @@ class BCEWrapper(nn.Module):
             target = target.T
         t = target.clone().to(pred.device, dtype=pred.dtype)
         return self.bce(pred, t)
+    
+import torch
+import torch.nn as nn
+import torchvision.ops as ops
+
+# ================== Focal BCE Wrapper (torchvision) ==================
+class FocalBCEWrapperTV(nn.Module):
+    def __init__(self, num_classes, alpha=0.25, gamma=2.0, reduction='mean'):
+        """
+        num_classes: số class output
+        alpha: cân bằng pos/neg
+        gamma: focusing parameter
+        reduction: 'mean', 'sum' hoặc 'none'
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, pred, target):
+        """
+        pred: (N, num_classes) hoặc (num_classes, N), logits
+        target: one-hot (N, num_classes) hoặc (num_classes, N)
+        """
+        if pred.dim() == 2 and pred.shape[1] != self.num_classes:
+            pred = pred.T
+        if target.dim() == 2 and target.shape[0] == self.num_classes:
+            target = target.T
+
+        pred = pred.to(target.device, dtype=target.dtype)
+        t = target.clone().to(pred.device, dtype=pred.dtype)
+
+        # torchvision.ops.sigmoid_focal_loss dùng logits trực tiếp
+        loss = ops.sigmoid_focal_loss(
+            inputs=pred,
+            targets=t,
+            alpha=self.alpha,
+            gamma=self.gamma,
+            reduction=self.reduction
+        )
+        return loss
+
 
 
 # ================== MSE Loss ==================
@@ -181,4 +224,101 @@ class MSEWrapper(nn.Module):
             target = target.T
         t = target.clone().to(pred.device, dtype=pred.dtype)
         return self.mse(pred, t)
+    
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class OneHotCrossEntropyLoss(nn.Module):
+    def __init__(self, reduction='mean'):
+        super().__init__()
+        self.reduction = reduction
+
+    def forward(self, logits, target_onehot):
+        log_probs = F.log_softmax(logits, dim=1)
+        loss = -(target_onehot * log_probs).sum(dim=1)
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:
+            return loss
+
+class NegClsLoss(nn.Module):
+    def __init__(self, num_classes, reduction='mean'):
+        super().__init__()
+        self.num_classes = num_classes
+        self.criterion = OneHotCrossEntropyLoss(reduction=reduction)
+
+    def forward(self, pred):
+        if pred.dim() == 2 and pred.shape[1] != self.num_classes:
+            pred = pred.T
+        batch_size = pred.shape[0]
+        # tạo target uniform cùng device với pred
+        target_uniform = torch.full(
+            (batch_size, self.num_classes),
+            1.0 / self.num_classes,
+            device=pred.device,
+            dtype=pred.dtype
+        )
+        loss = self.criterion(pred, target_uniform)
+        return loss
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class NegClsFocalLoss(nn.Module):
+    def __init__(self, num_classes, alpha=1.0, gamma=2.0, reduction='mean'):
+        """
+        num_classes: số lớp
+        alpha: hệ số cân bằng (giảm tác động của easy samples)
+        gamma: độ nhạy của focal (mặc định 2.0)
+        reduction: 'mean' hoặc 'sum'
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, pred):
+        """
+        pred: logits shape (N, num_classes) hoặc (num_classes, N)
+        => Loss trung tính, ép model không tự tin ở vùng không có GT.
+        """
+        if pred.dim() == 2 and pred.shape[1] != self.num_classes:
+            pred = pred.T
+
+        batch_size = pred.shape[0]
+
+        # target trung tính (đều cho mọi class)
+        target_uniform = torch.full(
+            (batch_size, self.num_classes),
+            1.0 / self.num_classes,
+            device=pred.device,
+            dtype=pred.dtype
+        )
+
+        # softmax để lấy xác suất từng class
+        probs = F.softmax(pred, dim=1).clamp(min=1e-8, max=1.0)  # tránh log(0)
+
+        # focal modulation: (1 - p_t)^γ
+        focal_weight = torch.pow(1.0 - probs, self.gamma)
+
+        # focal cross-entropy với target uniform
+        loss = -self.alpha * focal_weight * target_uniform * torch.log(probs)
+
+        loss = loss.sum(dim=1)  # tổng qua các class
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:
+            return loss
+
+
+
 

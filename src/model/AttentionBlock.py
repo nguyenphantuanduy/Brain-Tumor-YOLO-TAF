@@ -11,6 +11,11 @@ class AttentionBlock(nn.Module):
         self.down1 = nn.Conv2d(dim, dim, kernel_size=3, stride=2, padding=1)
         # self.down2 = nn.Conv2d(dim, dim, kernel_size=3, stride=2, padding=1)
         self.act = nn.SiLU()
+        self.w = nn.Parameter(torch.zeros(1, dim, 1, 1))
+        self.alpha = nn.Parameter(torch.ones(1, dim, 1, 1))  # trọng số cho x gốc
+
+        self.mix_conv = nn.Conv2d(dim, dim, kernel_size=3, padding=1, stride=1)
+        self.mix_norm = nn.BatchNorm2d(dim)
 
     def forward(self, x):  # x: (B, C, H, W)
         B, C, H, W = x.shape
@@ -29,7 +34,11 @@ class AttentionBlock(nn.Module):
         out = F.interpolate(out, size=(H, W), mode='bilinear', align_corners=False)
 
         # --- Residual + norm ---
-        out = out + x
+        out = self.alpha * x + self.w * out
         out = self.norm(out)
+        out = self.act(out)
+
+        out = self.mix_conv(out)
+        out = self.mix_norm(out)
         out = self.act(out)
         return out

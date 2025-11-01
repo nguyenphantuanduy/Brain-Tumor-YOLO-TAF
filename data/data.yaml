@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 4
+names: ['Glioma', 'Meningioma', 'NoTumor', 'Pituitary']
+
+roboflow:
+  workspace: brain-tumor-detection-psszx
+  project: brain-tumor-afjis
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/brain-tumor-detection-psszx/brain-tumor-afjis/dataset/3
