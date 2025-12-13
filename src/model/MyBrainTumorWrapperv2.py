@@ -81,7 +81,7 @@ class MyBrainTumorWrapperv2:
         return self.wrapper.predict(path)
     
     def img_predict(self, path, class_names=class_names):
-        self.wrapper.img_predict(path, class_names)
+        return self.wrapper.img_predict(path, class_names)
 
     def compile(self, mode="Warm-up"):
         self.wrapper.compile(optimizer = self.training_phases[mode]["optimizer"], 

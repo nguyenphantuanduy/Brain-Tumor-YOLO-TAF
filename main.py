@@ -123,13 +123,23 @@ if __name__ == "__main__":
 
 
 
-    test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
-                    shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    # test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
+    # test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+    #                 shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    import matplotlib.pyplot as plt
+    image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
     model = BrainTumorv2()
-    myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_epic.pth.tar")
-    myWrapper.compile("Sustain")
-    myWrapper.evaluate(test_dataloader, True)
+    myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar")
+    img = myWrapper.img_predict(image_path)
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    plt.figure(figsize=(6,6))
+    plt.imshow(img_rgb)
+    plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+    # myWrapper.compile("Sustain")
+    # myWrapper.evaluate(test_dataloader, True)
 
     # model = BrainTumorv4()
     # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv4_legendary.pth.tar")
