@@ -17,6 +17,7 @@ from src.model.MyBrainTumorWrapperv2 import MyBrainTumorWrapperv2
 from src.model.MyBrainTumorWrapperv3 import MyBrainTumorWrapperv3
 from src.model.MyBrainTumorWrapperv4 import MyBrainTumorWrapperv4
 from src.model.BrainTumorv7 import BrainTumorv7
+from src.model.Yoloonly import run
 # def cls_loss_fn(pred, target):
 #     target = target.long()  # ép sang Long
 #     return nn.CrossEntropyLoss()(pred.unsqueeze(0), target.unsqueeze(0))
@@ -92,42 +93,43 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
-    SEED = 42
-    set_seed(SEED)
+    # SEED = 42
+    # set_seed(SEED)
 
-    # --- Tạo generator cho DataLoader ---
-    g = torch.Generator()
-    g.manual_seed(SEED)
+    # # --- Tạo generator cho DataLoader ---
+    # g = torch.Generator()
+    # g.manual_seed(SEED)
 
-    train_dataset = Brain_Tumor_Dataset("data/total_train_list.pkl")
-    train_dataloader = DataLoader(
-        dataset=train_dataset, batch_size=8,
-        shuffle=True, num_workers=0, pin_memory=False,
-        collate_fn=yolo_collate_fn,
-        generator=g  # shuffle deterministic
-    )
+    # train_dataset = Brain_Tumor_Dataset("data/total_train_list_aug.pkl")
+    # train_dataloader = DataLoader(
+    #     dataset=train_dataset, batch_size=8,
+    #     shuffle=True, num_workers=0, pin_memory=False,
+    #     collate_fn=yolo_collate_fn,
+    #     generator=g  # shuffle deterministic
+    # )
 
-    val_dataset = Brain_Tumor_Dataset("data/total_val_list.pkl")
-    val_dataloader = DataLoader(
-        dataset=val_dataset, batch_size=8,
-        shuffle=False, num_workers=0, pin_memory=False,
-        collate_fn=yolo_collate_fn
-    )
+    # val_dataset = Brain_Tumor_Dataset("data/total_val_list.pkl")
+    # val_dataloader = DataLoader(
+    #     dataset=val_dataset, batch_size=8,
+    #     shuffle=False, num_workers=0, pin_memory=False,
+    #     collate_fn=yolo_collate_fn
+    # )
 
-    model = BrainTumorv5()
-    myWrapper = MyBrainTumorWrapperv4(
-        model, CKPT_PATH="experiments/BrainTumorv5_legendary.pth.tar"
-    )
-    myWrapper.fit(train_dataloader, val_dataloader, 10, 5, "Warm-up")
+    # model = BrainTumorv2()
+    # myWrapper = MyBrainTumorWrapperv4(
+    #     model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar"
+    # )
+    # myWrapper.fit(train_dataloader, val_dataloader, 50, 10, "Sustain")
 
 
-    # test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
-    # test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
-    #                 shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
-    # model = BrainTumorv4()
-    # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv4_legendary.pth.tar")
-    # myWrapper.compile("Sustain")
-    # myWrapper.evaluate(test_dataloader, True)
+
+    test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
+    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+                    shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    model = BrainTumorv2()
+    myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_epic.pth.tar")
+    myWrapper.compile("Sustain")
+    myWrapper.evaluate(test_dataloader, True)
 
     # model = BrainTumorv4()
     # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv4_legendary.pth.tar")
@@ -147,3 +149,27 @@ if __name__ == "__main__":
 
     # train_list_aug = load_list("data/train_list.pkl")
     # save_list(train_list02 + train_list_aug, "data/total_train_list_aug.pkl")
+
+    # save_list_txt("data/total_train_list_aug.pkl", "data/total_train_list_aug.txt")
+    # save_list_txt("data/total_val_list.pkl", "data/total_val_list.txt")
+    # save_list_txt("data/total_test_list.pkl", "data/total_test_list.txt")
+
+    # import yaml
+
+    # # Cấu hình YAML cho YOLOv8
+    # yaml_config = {
+    #     "train": "data/total_train_list_aug.txt",
+    #     "val": "data/total_val_list.txt",
+    #     "test": "data/total_test_list.txt",  # optional
+    #     "nc": 4,
+    #     "names": ["Glioma", "Meningioma", "NoTumor", "Pituitary"]
+    # }
+
+    # yaml_path = "data/brain_tumor.yaml"
+
+    # with open(yaml_path, "w") as f:
+    #     yaml.dump(yaml_config, f, sort_keys=False)
+
+    # print(f"✅ Đã tạo file YAML: {yaml_path}")
+    # run()
+

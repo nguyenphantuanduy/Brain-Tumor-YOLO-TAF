@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 
-from src.model.BrainTumorv4 import BrainTumorv4
+from src.model.BrainTumorv2 import BrainTumorv2
 from src.model.MyBrainTumorWrapperv4 import MyBrainTumorWrapperv4
 
 # Hàm lấy đường dẫn đúng trong exe
@@ -68,9 +68,9 @@ class BrainTumorApp:
         self.status_label.config(text="Đang tải mô hình...")
         root.update()
 
-        model = BrainTumorv4().to(device)  # Ép model về CPU
+        model = BrainTumorv2().to(device)  # Ép model về CPU
         self.wrapper = MyBrainTumorWrapperv4(model,
-                                              CKPT_PATH=resource_path("experiments/BrainTumorv4_legendary.pth.tar"),
+                                              CKPT_PATH=resource_path("experiments/BrainTumorv2_legendary.pth.tar"),
                                               device=device)  # Nếu wrapper có nhận device
 
         print("✅ Model loaded successfully.")

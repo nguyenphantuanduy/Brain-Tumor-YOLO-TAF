@@ -694,15 +694,18 @@ class BrainTumorWrapperv2:
                                 output_tensor[3, :],  # h
                                 self.img_size
                         )  # Kết quả có shape (num_no_gt, 4)
-                    pred_score_nms = output_tensor[4, :]
+                    objness = torch.sigmoid(output_tensor[4, :])
+                    class_probs = F.softmax(output_tensor[5:, :], dim=0)
+                    cls_prob_max, cls_idx = class_probs.max(dim=0)
+                    pred_score_nms = objness * cls_prob_max
                     pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
                     keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.3)
                     keep_boxes = pred_boxes_nms[keep]
                     keep_scores = pred_score_nms[keep]
                     keep_cls = pred_cls_nms[keep]
 
-                    # Lọc theo threshold 0.6
-                    mask = torch.sigmoid(keep_scores) > 0.6
+                    # Lọc theo threshold 0.7
+                    mask_keep = keep_scores > 0.7
                     keep_boxes = keep_boxes[mask]
                     keep_scores = keep_scores[mask]
                     keep_cls = keep_cls[mask]
@@ -805,7 +808,10 @@ class BrainTumorWrapperv2:
                                 output_tensor[3, :],  # h
                                 self.img_size
                         )  # Kết quả có shape (num_no_gt, 4)
-            pred_score_nms = output_tensor[4, :]
+            objness = torch.sigmoid(output_tensor[4, :])
+            class_probs = F.softmax(output_tensor[5:, :], dim=0)
+            cls_prob_max, cls_idx = class_probs.max(dim=0)
+            pred_score_nms = objness * cls_prob_max
             pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
 
             keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.3)
@@ -813,9 +819,9 @@ class BrainTumorWrapperv2:
             keep_scores = pred_score_nms[keep]
             keep_cls = pred_cls_nms[keep]
 
-            # Lọc theo threshold 0.6
+            # Lọc theo threshold 0.7
             # mask = torch.sigmoid(keep_scores) > 0.6
-            mask = torch.sigmoid(keep_scores) > 0.6
+            mask = keep_scores > 0.7
             keep_boxes = keep_boxes[mask]
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]
@@ -826,7 +832,7 @@ class BrainTumorWrapperv2:
                 keep_boxes = keep_boxes[topk_idx]
                 keep_scores = topk_scores
                 keep_cls = keep_cls[topk_idx]
-        return keep_boxes, torch.sigmoid(keep_scores), keep_cls
+        return keep_boxes, keep_scores, keep_cls
     
     def img_predict(self, path, class_names=class_names):
         keep_boxes, keep_scores, keep_cls = self.predict(path)

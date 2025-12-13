@@ -19,6 +19,7 @@ class MyBrainTumorWrapper:
         loss_ciou = CIoULossWrapper(device, img_size)
         loss_giou = GIoULossWrapper(device, img_size)
         loss_vfl = VFLWrapper(device, num_classes)
+        loss_bcefl = FocalBCEWrapperTV(1)
 
         # Phase 1: Warm-up
         optimizer_warmup = optim.SGD(params=model.parameters(), lr=1e-3)
@@ -48,14 +49,14 @@ class MyBrainTumorWrapper:
         "Acceleration": {
             "loss_reg": loss_ciou,
             "loss_cls": loss_vfl,
-            "loss_objness": loss_bce,
+            "loss_objness": loss_bcefl,
             "optimizer": optimizer_accel,
             "scheduler": scheduler_accel,
         },
         "Sustain": {
             "loss_reg": loss_giou,
             "loss_cls": loss_vfl,
-            "loss_objness": loss_bce,
+            "loss_objness": loss_bcefl,
             "optimizer": optimizer_sustain,
             "scheduler": scheduler_sustain,
         }

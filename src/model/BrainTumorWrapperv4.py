@@ -705,8 +705,8 @@ class BrainTumorWrapperv4:
                     keep_scores = pred_score_nms[keep]
                     keep_cls = pred_cls_nms[keep]
 
-                    # Lọc theo threshold 0.55
-                    mask_keep = keep_scores > 0.55
+                    # Lọc theo threshold 0.7
+                    mask_keep = keep_scores > 0.7
                     keep_boxes = keep_boxes[mask_keep]
                     keep_scores = keep_scores[mask_keep]
                     keep_cls = keep_cls[mask_keep]
@@ -820,9 +820,9 @@ class BrainTumorWrapperv4:
             keep_scores = pred_score_nms[keep]
             keep_cls = pred_cls_nms[keep]
 
-            # Lọc theo threshold 0.55
+            # Lọc theo threshold 0.7
             # mask = torch.sigmoid(keep_scores) > 0.55
-            mask = keep_scores > 0.55
+            mask = keep_scores > 0.7
             keep_boxes = keep_boxes[mask]
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]

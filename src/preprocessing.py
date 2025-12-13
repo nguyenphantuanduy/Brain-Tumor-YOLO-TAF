@@ -183,6 +183,15 @@ def createListFromPath02(path):
         itemList.append((str(img_path), bboxes))
     return itemList
 
+def save_list_txt(path_in, path_save):
+    _list = load_list(path_in)  # _list: [(img_path, label), ...]
+    with open(path_save, "w") as f:
+        for img_path, _ in _list:  # bỏ label
+            img_path = img_path.replace("\\", "/")  # chuẩn hóa đường dẫn
+            f.write(f"{img_path}\n")
+
+
+
     
 
 

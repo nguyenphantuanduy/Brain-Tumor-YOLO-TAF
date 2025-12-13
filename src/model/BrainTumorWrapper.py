@@ -13,6 +13,9 @@ import numpy as np
 from src.utils import visualize_mri_prediction
 import os
 import cv2
+import torch.nn.functional as F
+from src.utils import PrecisionRecall
+import time
 
 
 class BrainTumorWrapper:
@@ -383,7 +386,7 @@ class BrainTumorWrapper:
                     # print("kkkkkkkkk")
                     # Phần không có gt (objness = 0)
                     obj_loss_no_gt = self.objness_loss(output_no_gt[4:5, :], torch.zeros_like(output_no_gt[4:5, :]))
-                    sample_loss += loss_has_gt + 1/3 * obj_loss_no_gt
+                    sample_loss += loss_has_gt + obj_loss_no_gt
                     # print(output_has_gt)
                     # print("hhhhhhhhhhhh")
 
@@ -505,6 +508,7 @@ class BrainTumorWrapper:
         self.model.eval()
         total_loss = 0.0
         metric_map = MeanAveragePrecision().to(self.device)
+        precision_recall = PrecisionRecall()
         # metric_fn = MetricBuilder.build_evaluation_metric("map_2d", num_classes=4)
 
         with torch.no_grad():
@@ -582,7 +586,7 @@ class BrainTumorWrapper:
 
                     # Phần không có gt (objness = 0)
                     obj_loss_no_gt = self.objness_loss(output_no_gt[4:5, :], torch.zeros_like(output_no_gt[4:5, :]))
-                    sample_loss += loss_has_gt + 1/3 * obj_loss_no_gt
+                    sample_loss += loss_has_gt + obj_loss_no_gt
                     # print(f"Sample obj loss: {loss_has_gt.item()}")   
                     # print(f"Sample no obj loss: {obj_loss_no_gt.item()}")   
 
@@ -687,7 +691,10 @@ class BrainTumorWrapper:
                                 output_tensor[3, :],  # h
                                 self.img_size
                         )  # Kết quả có shape (num_no_gt, 4)
-                    pred_score_nms = output_tensor[4, :]
+                    objness = torch.sigmoid(output_tensor[4, :])
+                    class_probs = F.softmax(output_tensor[5:, :], dim=0)
+                    cls_prob_max, cls_idx = class_probs.max(dim=0)
+                    pred_score_nms = objness * cls_prob_max
                     pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
                     keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.5)
                     keep_boxes = pred_boxes_nms[keep]
@@ -696,7 +703,7 @@ class BrainTumorWrapper:
 
                     # Lọc theo threshold 0.6
                     # mask = torch.sigmoid(keep_scores) > 0.6
-                    mask = torch.sigmoid(keep_scores) > 6
+                    mask = keep_scores > 0.7
                     keep_boxes = keep_boxes[mask]
                     keep_scores = keep_scores[mask]
                     keep_cls = keep_cls[mask]
@@ -731,6 +738,7 @@ class BrainTumorWrapper:
 
                 total_loss += batch_loss
                 metric_map.update(preds_for_metric, gts_for_metric)
+                precision_recall.update(preds_for_metric, gts_for_metric)
                 # metric_fn.add(
                 #         pred_combined.detach().cpu().numpy(),
                 #         gt_combined_full.detach().cpu().numpy()
@@ -739,11 +747,14 @@ class BrainTumorWrapper:
         # Tính trung bình loss và mAP
         avg_loss = total_loss / len(val_loader)
         map_results = metric_map.compute()
+        precision_recall_results = precision_recall.compute()
         # res = metric_fn.value(iou_thresholds=[0.5])
         # print("Precision:", res["precision"])
         # print("Recall:", res["recall"])
 
         if verbose:
+            print("Precision:", precision_recall_results['precision'])
+            print("Recall   :", precision_recall_results['recall'])
             print(f"Validation loss: {avg_loss:.4f}")
             print(f"mAP@0.5: {map_results['map_50']:.4f}, mAP@0.5:0.95: {map_results['map']:.4f}")            
         return {"val_loss": avg_loss, "mAP": map_results}
@@ -791,7 +802,10 @@ class BrainTumorWrapper:
                                 output_tensor[3, :],  # h
                                 self.img_size
                         )  # Kết quả có shape (num_no_gt, 4)
-            pred_score_nms = output_tensor[4, :]
+            objness = torch.sigmoid(output_tensor[4, :])
+            class_probs = F.softmax(output_tensor[5:, :], dim=0)
+            cls_prob_max, cls_idx = class_probs.max(dim=0)
+            pred_score_nms = objness * cls_prob_max
             pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
 
             keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.5)
@@ -800,7 +814,7 @@ class BrainTumorWrapper:
             keep_cls = pred_cls_nms[keep]
 
             # Lọc theo threshold 0.6
-            mask = torch.sigmoid(keep_scores) > 0.6
+            mask = keep_scores > 0.7
             keep_boxes = keep_boxes[mask]
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]
