@@ -846,6 +846,7 @@ class BrainTumorWrapperv4:
         img_result = visualize_mri_prediction(path, keep_boxes, keep_scores, keep_cls, class_names)
         cv2.imwrite("predicted.png", img_result)
         print("Prediction saved to predicted.png")
+        return img_result
 
 
     def save_model(self, path, epoch=None):
