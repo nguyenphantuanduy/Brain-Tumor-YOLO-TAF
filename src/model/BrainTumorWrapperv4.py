@@ -705,18 +705,18 @@ class BrainTumorWrapperv4:
                     keep_scores = pred_score_nms[keep]
                     keep_cls = pred_cls_nms[keep]
 
-                    # Lọc theo threshold 0.7
-                    mask_keep = keep_scores > 0.7
+                    # Lọc theo threshold 0.001
+                    mask_keep = keep_scores > 0.001
                     keep_boxes = keep_boxes[mask_keep]
                     keep_scores = keep_scores[mask_keep]
                     keep_cls = keep_cls[mask_keep]
 
                     # Giữ tối đa 5 bbox
-                    if len(keep_scores) > 5:
-                        topk_scores, topk_idx = torch.topk(keep_scores, 5)
-                        keep_boxes = keep_boxes[topk_idx]
-                        keep_scores = topk_scores
-                        keep_cls = keep_cls[topk_idx]
+                    # if len(keep_scores) > 5:
+                    #     topk_scores, topk_idx = torch.topk(keep_scores, 5)
+                    #     keep_boxes = keep_boxes[topk_idx]
+                    #     keep_scores = topk_scores
+                    #     keep_cls = keep_cls[topk_idx]
 
 
                     keep_boxes_tensor = keep_boxes.to(self.device)
@@ -828,11 +828,11 @@ class BrainTumorWrapperv4:
             keep_cls = keep_cls[mask]
 
             # Giữ tối đa 5 bbox
-            if len(keep_scores) > 5:
-                topk_scores, topk_idx = torch.topk(keep_scores, 5)
-                keep_boxes = keep_boxes[topk_idx]
-                keep_scores = topk_scores
-                keep_cls = keep_cls[topk_idx]
+            # if len(keep_scores) > 5:
+            #     topk_scores, topk_idx = torch.topk(keep_scores, 5)
+            #     keep_boxes = keep_boxes[topk_idx]
+            #     keep_scores = topk_scores
+            #     keep_cls = keep_cls[topk_idx]
         return keep_boxes, keep_scores, keep_cls
     
     def img_predict(self, path, class_names=class_names):

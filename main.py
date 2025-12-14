@@ -123,21 +123,24 @@ if __name__ == "__main__":
 
 
 
-    # test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
-    # test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
-    #                 shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
-    import matplotlib.pyplot as plt
-    image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
+    test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
+    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+                    shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    # import matplotlib.pyplot as plt
+    # image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
     model = BrainTumorv2()
-    myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar")
-    img = myWrapper.img_predict(image_path)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    myWrapper = MyBrainTumorWrapperv2(model, CKPT_PATH="experiments/BrainTumorv2_epic.pth.tar")
+    myWrapper.evaluate(test_dataloader, True)
+    # img = myWrapper.img_predict(image_path)
 
-    plt.figure(figsize=(6,6))
-    plt.imshow(img_rgb)
-    plt.axis("off")
-    plt.tight_layout()
-    plt.show()
+
+    # img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # plt.figure(figsize=(6,6))
+    # plt.imshow(img_rgb)
+    # plt.axis("off")
+    # plt.tight_layout()
+    # plt.show()
     # myWrapper.compile("Sustain")
     # myWrapper.evaluate(test_dataloader, True)
 
@@ -182,4 +185,16 @@ if __name__ == "__main__":
 
     # print(f"✅ Đã tạo file YAML: {yaml_path}")
     # run()
+    # train_list = load_list("data/total_train_list.pkl")
+    # val_list   = load_list("data/total_val_list.pkl")
+    # test_list  = load_list("data/total_test_list.pkl")
+    # train_list_aug = load_list("data/total_train_list_aug.pkl")
+
+    # print("Dataset statistics")
+    # print("-" * 30)
+    # print(f"{'Train':15}: {len(train_list):6}")
+    # print(f"{'Train (Aug)':15}: {len(train_list_aug):6}")
+    # print(f"{'Validation':15}: {len(val_list):6}")
+    # print(f"{'Test':15}: {len(test_list):6}")
+
 

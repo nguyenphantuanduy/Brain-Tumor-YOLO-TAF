@@ -99,55 +99,135 @@ def shifted_sigmoid(x, shift=6.0):
 import torch
 from torchvision.ops import box_iou
 
+# class PrecisionRecall:
+#     def __init__(self, iou_threshold=0.5):
+#         self.iou_threshold = iou_threshold
+#         self.tp = 0
+#         self.fp = 0
+#         self.fn = 0
+
+#     @torch.no_grad()
+#     def update(self, preds, targets):
+#         """
+#         preds, targets: list of dicts with keys 'boxes' [N,4], 'labels' [N]
+#         """
+#         for pred, target in zip(preds, targets):
+#             boxes_pred = pred['boxes']
+#             labels_pred = pred['labels']
+#             boxes_gt = target['boxes']
+#             labels_gt = target['labels']
+
+#             device = boxes_gt.device  # lấy device của gt
+
+#             if boxes_pred.numel() == 0:
+#                 self.fn += boxes_gt.size(0)
+#                 continue
+
+#             matched_gt = set()
+#             ious = box_iou(boxes_pred.to(device), boxes_gt)  # đảm bảo cùng device
+
+#             for i, p_label in enumerate(labels_pred):
+#                 p_label = p_label.to(device)
+#                 mask = (labels_gt == p_label)
+
+#                 iou_vals = ious[i][mask]
+#                 gt_indices = torch.arange(len(labels_gt), device=device)[mask]
+
+#                 if len(iou_vals) == 0:
+#                     self.fp += 1
+#                     continue
+
+#                 max_iou, idx = iou_vals.max(0)
+#                 gt_idx = gt_indices[idx]
+#                 if max_iou >= self.iou_threshold and gt_idx.item() not in matched_gt:
+#                     self.tp += 1
+#                     matched_gt.add(gt_idx.item())
+#                 else:
+#                     self.fp += 1
+
+#             self.fn += boxes_gt.size(0) - len(matched_gt)
+
+#     def compute(self):
+#         precision = self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
+#         recall = self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
+#         return {'precision': precision, 'recall': recall}
+
+import torch
+from torchvision.ops import box_iou
+
 class PrecisionRecall:
     def __init__(self, iou_threshold=0.5):
         self.iou_threshold = iou_threshold
-        self.tp = 0
-        self.fp = 0
-        self.fn = 0
+        self.precisions = []
+        self.recalls = []
 
     @torch.no_grad()
     def update(self, preds, targets):
         """
-        preds, targets: list of dicts with keys 'boxes' [N,4], 'labels' [N]
+        preds: list of dicts {boxes, scores, labels}
+        targets: list of dicts {boxes, labels}
         """
         for pred, target in zip(preds, targets):
             boxes_pred = pred['boxes']
+            scores_pred = pred['scores']
             labels_pred = pred['labels']
+
             boxes_gt = target['boxes']
             labels_gt = target['labels']
 
-            device = boxes_gt.device  # lấy device của gt
-
-            if boxes_pred.numel() == 0:
-                self.fn += boxes_gt.size(0)
+            if boxes_pred.numel() == 0 or boxes_gt.numel() == 0:
                 continue
 
+            device = boxes_gt.device
+
+            # 🔑 SORT THEO CONFIDENCE
+            order = torch.argsort(scores_pred, descending=True)
+            boxes_pred = boxes_pred[order]
+            labels_pred = labels_pred[order]
+
             matched_gt = set()
-            ious = box_iou(boxes_pred.to(device), boxes_gt)  # đảm bảo cùng device
+            TP = 0
+            FP = 0
+            num_gt = boxes_gt.size(0)
+
+            ious = box_iou(boxes_pred.to(device), boxes_gt)
 
             for i, p_label in enumerate(labels_pred):
-                p_label = p_label.to(device)
                 mask = (labels_gt == p_label)
 
-                iou_vals = ious[i][mask]
-                gt_indices = torch.arange(len(labels_gt), device=device)[mask]
-
-                if len(iou_vals) == 0:
-                    self.fp += 1
-                    continue
-
-                max_iou, idx = iou_vals.max(0)
-                gt_idx = gt_indices[idx]
-                if max_iou >= self.iou_threshold and gt_idx.item() not in matched_gt:
-                    self.tp += 1
-                    matched_gt.add(gt_idx.item())
+                if mask.sum() == 0:
+                    FP += 1
                 else:
-                    self.fp += 1
+                    iou_vals = ious[i][mask]
+                    gt_indices = torch.arange(num_gt, device=device)[mask]
 
-            self.fn += boxes_gt.size(0) - len(matched_gt)
+                    max_iou, idx = iou_vals.max(0)
+                    gt_idx = gt_indices[idx].item()
+
+                    if max_iou >= self.iou_threshold and gt_idx not in matched_gt:
+                        TP += 1
+                        matched_gt.add(gt_idx)
+                    else:
+                        FP += 1
+
+                precision = TP / (TP + FP)
+                recall = TP / num_gt
+
+                self.precisions.append(precision)
+                self.recalls.append(recall)
 
     def compute(self):
-        precision = self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
-        recall = self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
-        return {'precision': precision, 'recall': recall}
+        if len(self.precisions) == 0:
+            return {'precision': 0.0, 'recall': 0.0}
+
+        precisions = torch.tensor(self.precisions)
+        recalls = torch.tensor(self.recalls)
+
+        f1 = 2 * precisions * recalls / (precisions + recalls + 1e-6)
+        idx = torch.argmax(f1)
+
+        return {
+            'precision': precisions[idx].item(),
+            'recall': recalls[idx].item()
+        }
+
