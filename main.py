@@ -126,12 +126,31 @@ if __name__ == "__main__":
     test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
     test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
                     shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
-    # import matplotlib.pyplot as plt
-    # image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
+    # # import matplotlib.pyplot as plt
+    # # image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
     model = BrainTumorv2()
-    myWrapper = MyBrainTumorWrapperv2(model, CKPT_PATH="experiments/BrainTumorv2_epic.pth.tar")
+    myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar")
     myWrapper.evaluate(test_dataloader, True)
     # img = myWrapper.img_predict(image_path)
+    
+    # import os
+    # import csv
+
+    # LOG_PATH = "training_log.csv"
+
+    # # tạo file + header nếu chưa tồn tại
+    # if not os.path.exists(LOG_PATH):
+    #     with open(LOG_PATH, mode="w", newline="") as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow([
+    #             "epoch",
+    #             "train_loss",
+    #             "val_loss",
+    #             "precision",
+    #             "recall",
+    #             "mAP_50",
+    #             "mAP_50_95"
+    #         ])
 
 
     # img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

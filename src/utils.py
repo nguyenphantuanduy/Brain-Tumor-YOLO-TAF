@@ -158,76 +158,123 @@ from torchvision.ops import box_iou
 class PrecisionRecall:
     def __init__(self, iou_threshold=0.5):
         self.iou_threshold = iou_threshold
-        self.precisions = []
-        self.recalls = []
+        self.preds = []   # list of dicts
+        self.gts = []     # list of dicts
 
     @torch.no_grad()
     def update(self, preds, targets):
         """
-        preds: list of dicts {boxes, scores, labels}
+        preds:   list of dicts {boxes, scores, labels}
         targets: list of dicts {boxes, labels}
         """
         for pred, target in zip(preds, targets):
-            boxes_pred = pred['boxes']
-            scores_pred = pred['scores']
-            labels_pred = pred['labels']
-
-            boxes_gt = target['boxes']
-            labels_gt = target['labels']
-
-            if boxes_pred.numel() == 0 or boxes_gt.numel() == 0:
-                continue
-
-            device = boxes_gt.device
-
-            # 🔑 SORT THEO CONFIDENCE
-            order = torch.argsort(scores_pred, descending=True)
-            boxes_pred = boxes_pred[order]
-            labels_pred = labels_pred[order]
-
-            matched_gt = set()
-            TP = 0
-            FP = 0
-            num_gt = boxes_gt.size(0)
-
-            ious = box_iou(boxes_pred.to(device), boxes_gt)
-
-            for i, p_label in enumerate(labels_pred):
-                mask = (labels_gt == p_label)
-
-                if mask.sum() == 0:
-                    FP += 1
-                else:
-                    iou_vals = ious[i][mask]
-                    gt_indices = torch.arange(num_gt, device=device)[mask]
-
-                    max_iou, idx = iou_vals.max(0)
-                    gt_idx = gt_indices[idx].item()
-
-                    if max_iou >= self.iou_threshold and gt_idx not in matched_gt:
-                        TP += 1
-                        matched_gt.add(gt_idx)
-                    else:
-                        FP += 1
-
-                precision = TP / (TP + FP)
-                recall = TP / num_gt
-
-                self.precisions.append(precision)
-                self.recalls.append(recall)
-
+            self.preds.append({
+                "boxes": pred["boxes"].detach(),
+                "scores": pred["scores"].detach(),
+                "labels": pred["labels"].detach()
+            })
+            self.gts.append({
+                "boxes": target["boxes"].detach(),
+                "labels": target["labels"].detach()
+            })
+    @torch.no_grad()
     def compute(self):
-        if len(self.precisions) == 0:
-            return {'precision': 0.0, 'recall': 0.0}
+        if len(self.preds) == 0:
+            return {"precision": 0.0, "recall": 0.0}
 
-        precisions = torch.tensor(self.precisions)
-        recalls = torch.tensor(self.recalls)
+        device = self.preds[0]["boxes"].device
+
+        all_boxes = []
+        all_scores = []
+        all_labels = []
+        image_ids = []
+
+        gt_boxes = []
+        gt_labels = []
+
+        img_id = 0
+        for pred, gt in zip(self.preds, self.gts):
+            n = pred["boxes"].size(0)
+
+            if n > 0:
+                all_boxes.append(pred["boxes"])
+                all_scores.append(pred["scores"])
+                all_labels.append(pred["labels"])
+                image_ids.append(
+                    torch.full((n,), img_id, device=device, dtype=torch.long)
+                )
+
+            gt_boxes.append(gt["boxes"])
+            gt_labels.append(gt["labels"])
+            img_id += 1
+
+        if len(all_boxes) == 0:
+            return {"precision": 0.0, "recall": 0.0}
+
+        all_boxes = torch.cat(all_boxes)
+        all_scores = torch.cat(all_scores)
+        all_labels = torch.cat(all_labels)
+        image_ids = torch.cat(image_ids)
+
+        # 🔑 SORT GLOBAL THEO CONFIDENCE
+        order = torch.argsort(all_scores, descending=True)
+        all_boxes = all_boxes[order]
+        all_scores = all_scores[order]
+        all_labels = all_labels[order]
+        image_ids = image_ids[order]
+
+        matched = set()
+        TP = 0
+        FP = 0
+        FN = 0
+
+        precisions = []
+        recalls = []
+
+        total_gt = sum(gt.size(0) for gt in gt_boxes)
+
+        for i in range(len(all_boxes)):
+            img = image_ids[i].item()
+            label = all_labels[i]
+
+            gtb = gt_boxes[img]
+            gtl = gt_labels[img]
+
+            mask = (gtl == label)
+
+            if mask.sum() == 0:
+                FP += 1
+            else:
+                ious = box_iou(
+                    all_boxes[i].unsqueeze(0),
+                    gtb[mask]
+                )[0]
+
+                max_iou, idx = ious.max(0)
+                gt_idx = torch.arange(len(gtl), device=device)[mask][idx].item()
+                key = (img, gt_idx)
+
+                if max_iou >= self.iou_threshold and key not in matched:
+                    TP += 1
+                    matched.add(key)
+                else:
+                    FP += 1
+
+            precision = TP / (TP + FP + 1e-6)
+            recall = TP / (total_gt + 1e-6)
+
+            precisions.append(precision)
+            recalls.append(recall)
+
+        precisions = torch.tensor(precisions)
+        recalls = torch.tensor(recalls)
 
         f1 = 2 * precisions * recalls / (precisions + recalls + 1e-6)
-        idx = torch.argmax(f1)
+        best_idx = torch.argmax(f1)
 
         return {
-            'precision': precisions[idx].item(),
-            'recall': recalls[idx].item()
+            "precision": precisions[best_idx].item(),
+            "recall": recalls[best_idx].item()
         }
+
 
