@@ -123,16 +123,18 @@ if __name__ == "__main__":
 
 
 
-    test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
-    test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
-                    shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
-    # # import matplotlib.pyplot as plt
-    # # image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
+    # test_dataset = Brain_Tumor_Dataset("data/total_test_list.pkl")
+    # test_dataloader = DataLoader(dataset=test_dataset, batch_size=8,
+    #                 shuffle=False, num_workers=0, pin_memory=False, collate_fn=yolo_collate_fn)
+    # # # import matplotlib.pyplot as plt
+    # # # image_path = "data/raw/Val/Glioma/images/gg (9).jpg"
+    # model = BrainTumorv2()
+    # myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar")
+    # myWrapper.evaluate(test_dataloader, True)
+    # img = myWrapper.img_predict(image_path)
     model = BrainTumorv2()
     myWrapper = MyBrainTumorWrapperv4(model, CKPT_PATH="experiments/BrainTumorv2_legendary.pth.tar")
-    myWrapper.evaluate(test_dataloader, True)
-    # img = myWrapper.img_predict(image_path)
-    
+    print(model)
     # import os
     # import csv
 
