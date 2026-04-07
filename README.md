@@ -47,18 +47,21 @@ Chọn file ảnh từ máy tính
 Nhấn Dự đoán.
 Kết quả sẽ hiển thị khung bao quanh vùng u não trên ảnh.
 ## 📁 Cấu trúc thư mục chính
+
+```text
 Brain-Tumor-YOLO-TAF/
 │
 ├── app.py
 ├── download_model.py
 ├── requirements.txt
 │
-├── experiments/
-│   └── BrainTumorv2_legendary.pth.tar
+├── src/
 │
-├── models/
-├── utils/
-└── data/
+├── BrainTumorv2_legendary.pth.tar
+│   (sẽ được tạo sau khi chạy download_model.py)
+│
+└── README.md
+```
 ## 👨‍💻 Tác giả
 Nguyễn Phan Tuấn Duy
 Võ Thiện Đăng Khoa
