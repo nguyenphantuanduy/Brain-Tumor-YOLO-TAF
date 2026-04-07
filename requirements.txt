@@ -7,3 +7,4 @@ albumentations
 tqdm
 opencv-python
 pycocotools
+gdown
