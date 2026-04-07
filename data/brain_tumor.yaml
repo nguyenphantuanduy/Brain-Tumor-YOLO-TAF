@@ -1,9 +1,0 @@
-train: total_train_list_aug.txt
-val: total_val_list.txt
-test: total_test_list.txt
-nc: 4
-names:
-  - Glioma
-  - Meningioma
-  - NoTumor
-  - Pituitary
