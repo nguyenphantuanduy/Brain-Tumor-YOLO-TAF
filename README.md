@@ -24,15 +24,14 @@ pip install -r requirements.txt
 ```
 ## 📥 Tải mô hình đã huấn luyện
 
-Do file mô hình có dung lượng lớn nên không được lưu trực tiếp trong repository.
-Sau khi cài đặt thư viện, hãy tải mô hình bằng lệnh:
+- Do file mô hình có dung lượng lớn nên không được lưu trực tiếp trong repository.
+- Sau khi cài đặt thư viện, hãy tải mô hình bằng lệnh:
 
 ```bash
 python download_model.py
 ```
 
-Lệnh này sẽ tải file mô hình:
-BrainTumorv2_legendary.pth.tar
+Lệnh này sẽ tải file mô hình: BrainTumorv2_legendary.pth.tar
 ## 🚀 Hướng dẫn sử dụng
 
 Sau khi tải mô hình thành công, chạy ứng dụng:
@@ -40,12 +39,11 @@ Sau khi tải mô hình thành công, chạy ứng dụng:
 python app.py
 ```
 Các bước sử dụng:
-Chờ giao diện người dùng xuất hiện.
-Nhấn Chọn ảnh để tải ảnh cần dự đoán.
-Chọn file ảnh từ máy tính
-(hỗ trợ .jpg, .png, ...).
-Nhấn Dự đoán.
-Kết quả sẽ hiển thị khung bao quanh vùng u não trên ảnh.
+- Chờ giao diện người dùng xuất hiện.
+- Nhấn Chọn ảnh để tải ảnh cần dự đoán.
+- Chọn file ảnh từ máy tính (hỗ trợ .jpg, .png, ...).
+- Nhấn Dự đoán.
+- Kết quả sẽ hiển thị khung bao quanh vùng u não trên ảnh.
 ## 📁 Cấu trúc thư mục chính
 
 ```text
@@ -63,8 +61,8 @@ Brain-Tumor-YOLO-TAF/
 └── README.md
 ```
 ## 👨‍💻 Tác giả
-Nguyễn Phan Tuấn Duy
-Võ Thiện Đăng Khoa
+- Nguyễn Phan Tuấn Duy
+- Võ Thiện Đăng Khoa
 ## 📌 Ghi chú
 
 Dự án được thực hiện cho mục đích học tập và nghiên cứu.
