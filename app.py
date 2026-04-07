@@ -108,7 +108,7 @@ class BrainTumorApp:
 
         model = BrainTumorv2().to(device)  # Ép model về CPU
         self.wrapper = MyBrainTumorWrapperv4(model,
-                                              CKPT_PATH=resource_path("experiments/BrainTumorv2_legendary.pth.tar"),
+                                              CKPT_PATH=resource_path("BrainTumorv2_legendary.pth.tar"),
                                               device=device)  # Nếu wrapper có nhận device
 
         print("✅ Model loaded successfully.")
