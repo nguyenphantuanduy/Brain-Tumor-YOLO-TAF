@@ -9,17 +9,19 @@ def yolo_collate_fn(batch):
     return paths, imgs, labels
 
 
-def visualize_mri_prediction(image_path, boxes, scores, labels, class_names=None, model_input_size=640):
+def visualize_mri_prediction(img, boxes, scores, labels, class_names=None, model_input_size=640):
     """
-    Vẽ bounding box và nhãn lên ảnh MRI gốc, tránh chữ bị đè chồng.
-    boxes là output từ model (640x640), scale về kích thước gốc.
+    Vẽ bounding box lên ảnh numpy (RGB), không dùng file path.
     """
+
     import cv2
     import numpy as np
 
-    # Load ảnh grayscale và chuyển sang RGB
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    # đảm bảo input là numpy RGB
+    if isinstance(img, str):
+        img = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
     orig_h, orig_w = img.shape[:2]
 
     boxes = boxes.cpu().numpy()
@@ -28,26 +30,27 @@ def visualize_mri_prediction(image_path, boxes, scores, labels, class_names=None
 
     used_text_positions = []
 
-    # Tỉ lệ scale từ 640x640 -> ảnh gốc
     scale_x = orig_w / model_input_size
     scale_y = orig_h / model_input_size
 
     for box, score, label in zip(boxes, scores, labels):
-        # Scale bbox về ảnh gốc
+
         x1, y1, x2, y2 = box
-        print(f"Box: [{x1},{y1},{x2},{y2}], Score: {score:.4f}, Label: {label}")
+
         x1 = int(x1 * scale_x)
         x2 = int(x2 * scale_x)
         y1 = int(y1 * scale_y)
         y2 = int(y2 * scale_y)
 
-        # print(f"Box: [{x1},{y1},{x2},{y2}], Score: {score:.4f}, Label: {label}")
-
         color = (0, 255, 0)
+
         cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
 
         text = f"{class_names[label] if class_names else label}: {score:.2f}"
-        (text_w, text_h), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+
+        (text_w, text_h), baseline = cv2.getTextSize(
+            text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
+        )
 
         text_x = x1
         text_y = max(y1 - 5, text_h + 5)
@@ -58,9 +61,23 @@ def visualize_mri_prediction(image_path, boxes, scores, labels, class_names=None
 
         used_text_positions.append((text_x, text_y, text_h))
 
-        # Vẽ nền và text
-        cv2.rectangle(img, (text_x, text_y - text_h - 2), (text_x + text_w, text_y + baseline), color, -1)
-        cv2.putText(img, text, (text_x, text_y - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        cv2.rectangle(
+            img,
+            (text_x, text_y - text_h - 2),
+            (text_x + text_w, text_y + baseline),
+            color,
+            -1
+        )
+
+        cv2.putText(
+            img,
+            text,
+            (text_x, text_y - 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 0),
+            1
+        )
 
     return img
 

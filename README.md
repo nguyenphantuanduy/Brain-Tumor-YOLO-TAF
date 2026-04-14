@@ -22,6 +22,7 @@ Cài đặt tất cả thư viện bằng lệnh:
 ```bash
 pip install -r requirements.txt
 ```
+
 ## 📥 Tải mô hình đã huấn luyện
 
 - Do file mô hình có dung lượng lớn nên không được lưu trực tiếp trong repository.
@@ -32,18 +33,55 @@ python download_model.py
 ```
 
 Lệnh này sẽ tải file mô hình: BrainTumorv2_legendary.pth.tar
-## 🚀 Hướng dẫn sử dụng
 
-Sau khi tải mô hình thành công, chạy ứng dụng:
+## 🚀 Hướng dẫn sử dụng (README)
+
+### 1. Chạy Backend (FastAPI)
+
+Mở terminal tại thư mục project và chạy:
+
 ```bash
-python app.py
+uvicorn ai_server:app --reload
 ```
-Các bước sử dụng:
-- Chờ giao diện người dùng xuất hiện.
-- Nhấn Chọn ảnh để tải ảnh cần dự đoán.
-- Chọn file ảnh từ máy tính (hỗ trợ .jpg, .png, ...).
-- Nhấn Dự đoán.
-- Kết quả sẽ hiển thị khung bao quanh vùng u não trên ảnh.
+
+Backend sẽ chạy tại:
+http://localhost:8000
+
+### 2. Chạy Frontend (React + Vite)
+
+Mở terminal mới và thực hiện:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend sẽ chạy tại:
+http://localhost:5173
+
+### 3. Sử dụng ứng dụng
+
+- Mở trình duyệt và truy cập: http://localhost:5173
+- Nhấn Chọn ảnh để upload ảnh MRI từ máy tính (.jpg, .png, ...)
+- Nhấn Upload Image để hiển thị ảnh lên giao diện
+- Nhấn Run Prediction để gửi ảnh đến AI model
+- Kết quả sẽ hiển thị:
+- Ảnh MRI gốc (input)
+- Ảnh dự đoán có bounding box vùng u não
+
+### ⚠️ Lưu ý
+
+- Backend phải được chạy trước khi mở frontend
+- Nếu gặp lỗi upload, cài thêm dependency:
+
+```bash
+pip install python-multipart
+```
+
+- Nếu lỗi CORS, đảm bảo backend có cấu hình:
+  allow_origins=["http://localhost:5173"]
+
 ## 📁 Cấu trúc thư mục chính
 
 ```text
@@ -60,9 +98,12 @@ Brain-Tumor-YOLO-TAF/
 │
 └── README.md
 ```
+
 ## 👨‍💻 Tác giả
+
 - Nguyễn Phan Tuấn Duy
 - Võ Thiện Đăng Khoa
+
 ## 📌 Ghi chú
 
 Dự án được thực hiện cho mục đích học tập và nghiên cứu.

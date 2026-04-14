@@ -763,88 +763,100 @@ class BrainTumorWrapperv4:
         return {"val_loss": avg_loss, "mAP": map_results}
 
 
-    def predict(self, path):
+    def predict(self, img):
+
         self.model.eval()
-        
+
         with torch.no_grad():
-            image = Image.open(path).convert('L')  # 1 channel
-            image = image.resize((self.img_size, self.img_size))
-            image = torch.tensor(np.array(image)/255., dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # shape [1,1,H,W]
-            image = image.to(self.device)
+
+            # ===== INPUT HANDLING =====
+            if isinstance(img, str):
+                image = Image.open(img).convert('L')
+                image = np.array(image)
+            else:
+                # numpy input từ FastAPI / Tkinter
+                image = img
+
+                # nếu RGB → grayscale
+                if len(image.shape) == 3:
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+            # ===== PREPROCESS =====
+            image = cv2.resize(image, (self.img_size, self.img_size))
+            image = torch.tensor(image / 255., dtype=torch.float32)\
+                        .unsqueeze(0).unsqueeze(0)\
+                        .to(self.device)
+
+            # ===== INFERENCE =====
             start = time.perf_counter()
             outputs = self.model(image)
             end = time.perf_counter()
+
             print(f"Inference time: {(end - start)*1000:.2f} ms")
+
             output = []
             for (num_layer, layer) in zip(range(len(outputs)), outputs):
-                output.append(self.head_to_yolo(layer[0], self.strides[num_layer], self.img_size))
+                output.append(self.head_to_yolo(
+                    layer[0],
+                    self.strides[num_layer],
+                    self.img_size
+                ))
+
             output_tensor = torch.cat([fmap.flatten(1) for fmap in output], dim=1)
-            # pred_boxes_nms = []
-            # pred_score_nms = []
-            # pred_cls_nms = []
-
-            # for fmap_idx, fmap in enumerate(output):
-            #     H, W = fmap.shape[1], fmap.shape[2]
-            #     for i in range(H):
-            #         for j in range(W):
-            #             pred = output[fmap_idx][:, i, j]
-            #             x, y, w, h = pred[:4]
-            #             pred_obj = pred[4:5]
-            #             pred_cls = pred[5:]
-            #             pred_boxes_nms.append(self.yolo_to_xyxy(x, y, w, h, self.img_size))
-            #             score = (pred_obj * torch.max(pred_cls)).squeeze()  # đảm bảo 0D scalar
-            #             pred_score_nms.append(score)
-            #             pred_cls_nms.append(torch.argmax(pred_cls))
-                                
-
-            # pred_boxes_nms = torch.stack(pred_boxes_nms).to(self.device)
-            # pred_score_nms = torch.stack(pred_score_nms).to(self.device)
-            # pred_cls_nms = torch.stack(pred_cls_nms).to(self.device)
 
             pred_boxes_nms = self.yolo_to_xyxy(
-                                output_tensor[0, :],  # x
-                                output_tensor[1, :],  # y
-                                output_tensor[2, :],  # w
-                                output_tensor[3, :],  # h
-                                self.img_size
-                        )  # Kết quả có shape (num_no_gt, 4)
+                output_tensor[0, :],
+                output_tensor[1, :],
+                output_tensor[2, :],
+                output_tensor[3, :],
+                self.img_size
+            )
+
             objness = torch.sigmoid(output_tensor[4, :])
             class_probs = F.softmax(output_tensor[5:, :], dim=0)
+
             cls_prob_max, cls_idx = class_probs.max(dim=0)
             pred_score_nms = objness * cls_prob_max
-            # pred_score_nms = torch.sigmoid(output_tensor[4, :])
-            pred_cls_nms = output_tensor[5: , :].argmax(dim=0)
+            pred_cls_nms = output_tensor[5:, :].argmax(dim=0)
 
-            keep = batched_nms(pred_boxes_nms, pred_score_nms, pred_cls_nms, iou_threshold=0.1)
+            keep = batched_nms(
+                pred_boxes_nms,
+                pred_score_nms,
+                pred_cls_nms,
+                iou_threshold=0.1
+            )
+
             keep_boxes = pred_boxes_nms[keep]
             keep_scores = pred_score_nms[keep]
             keep_cls = pred_cls_nms[keep]
 
-            # Lọc theo threshold 0.7
-            # mask = torch.sigmoid(keep_scores) > 0.55
+            # ===== FILTER =====
             mask = keep_scores > 0.7
             keep_boxes = keep_boxes[mask]
             keep_scores = keep_scores[mask]
             keep_cls = keep_cls[mask]
 
-            # Giữ tối đa 5 bbox
-            # if len(keep_scores) > 5:
-            #     topk_scores, topk_idx = torch.topk(keep_scores, 5)
-            #     keep_boxes = keep_boxes[topk_idx]
-            #     keep_scores = topk_scores
-            #     keep_cls = keep_cls[topk_idx]
         return keep_boxes, keep_scores, keep_cls
     
-    def img_predict(self, path, class_names=class_names):
-        keep_boxes, keep_scores, keep_cls = self.predict(path)
-    #     # ======= DEBUG =======
-    #     print("Number of boxes after NMS:", len(keep_boxes))
-    #     print("Boxes:", keep_boxes)
-    #     print("Scores:", keep_scores)
-    #     print("Classes:", keep_cls)
-    # # =====================
-        img_result = visualize_mri_prediction(path, keep_boxes, keep_scores, keep_cls, class_names)
+    def img_predict(self, img, class_names=class_names):
+
+        # nếu truyền path thì convert sang image
+        if isinstance(img, str):
+            img = cv2.imread(img, cv2.IMREAD_GRAYSCALE)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
+        keep_boxes, keep_scores, keep_cls = self.predict(img)
+
+        img_result = visualize_mri_prediction(
+            img,
+            keep_boxes,
+            keep_scores,
+            keep_cls,
+            class_names
+        )
+
         cv2.imwrite("predicted.png", img_result)
+
         print("Prediction saved to predicted.png")
         return img_result
 

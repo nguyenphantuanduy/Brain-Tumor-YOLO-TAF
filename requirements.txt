@@ -8,3 +8,6 @@ tqdm
 opencv-python
 pycocotools
 gdown
+fastapi
+uvicorn
+python-multipart
