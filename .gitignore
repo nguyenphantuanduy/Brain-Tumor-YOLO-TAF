@@ -110,3 +110,7 @@ checkpoints/
 *.rar
 
 data/
+
+backend/BrainTumorv2.onnx*
+*.onnx
+*.onnx.data
