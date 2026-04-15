@@ -57,7 +57,7 @@ npm run dev
 Frontend runs at:
 
 http://localhost:5173
-⚠️ Notes (Local setup)
+### ⚠️ Notes (Local setup)
 
 If errors occur:
 
@@ -81,18 +81,18 @@ allow_origins=["http://localhost:5173"]
 docker compose up --build
 ```
 
-#### 🌐 Services
+### 🌐 Services
 
 Service URL
 
 - Frontend http://localhost:5173
 - Backend API http://localhost:8000
 
-#### 🧠 Docker architecture
+### 🧠 Docker architecture
 
 React Frontend → FastAPI Backend → YOLOv8 Model → Prediction Output
 
-#### ⚠️ Notes (Docker)
+### ⚠️ Notes (Docker)
 
 - First run may take longer due to model download
 - Ensure ports 5173 and 8000 are not occupied
