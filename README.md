@@ -1,55 +1,52 @@
-# PHÁT HIỆN U NÃO SỬ DỤNG YOLOv8l VỚI HÀM MẤT MÁT NEUTRAL-NEGATIVE
+# 🧠 Brain Tumor Detection using YOLOv8 + Neutral-Negative Loss
 
-Ứng dụng này sử dụng mô hình **YOLOv8l** kết hợp với **Neutral-Negative Loss** để **phát hiện u não trên ảnh y tế**. Người dùng có thể dễ dàng tải ảnh và nhận kết quả dự đoán trực quan thông qua giao diện đồ họa.
+- This project is an AI-based web application for brain tumor detection from MRI images using YOLOv8l combined with Neutral-Negative Loss.
+- It provides an interactive web interface for uploading MRI images and visualizing detection results.
 
----
+# 🎯 Project Objectives
 
-## 🎯 Mục tiêu dự án
+- Build an effective brain tumor detection model using YOLOv8l
+- Improve robustness using Neutral-Negative Loss
+- Provide a user-friendly web interface for real-time inference
+- Deployable using both local environment (venv) and Docker
 
-- Phát triển mô hình **nhận diện u não** hiệu quả dựa trên **YOLOv8l**.
-- Sử dụng **Neutral-Negative Loss** để cải thiện độ chính xác của mô hình.
-- Cung cấp **giao diện người dùng thân thiện** để dễ dàng thử nghiệm và sử dụng.
-
----
-
-## ⚙️ Yêu cầu hệ thống
+# ⚙️ System Requirements
 
 - Python >= 3.8
-- Các thư viện được liệt kê trong `requirements.txt`
+- Node.js >= 22 (for frontend)
+- pip / venv
+- Docker (optional)
 
-Cài đặt tất cả thư viện bằng lệnh:
+## 🚀 1. Run with Virtual Environment (Recommended for development)
+
+### 📦 Backend Setup
 
 ```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate # Windows
+
+# source venv/bin/activate # Linux/Mac
+
 pip install -r requirements.txt
 ```
 
-## 📥 Tải mô hình đã huấn luyện
-
-- Do file mô hình có dung lượng lớn nên không được lưu trực tiếp trong repository.
-- Sau khi cài đặt thư viện, hãy tải mô hình bằng lệnh:
+### 📥 Download model
 
 ```bash
 python download_model.py
 ```
 
-Lệnh này sẽ tải file mô hình: BrainTumorv2_legendary.pth.tar
-
-## 🚀 Hướng dẫn sử dụng (README)
-
-### 1. Chạy Backend (FastAPI)
-
-Mở terminal tại thư mục project và chạy:
+▶ Run backend
 
 ```bash
 uvicorn ai_server:app --reload
 ```
 
-Backend sẽ chạy tại:
+Backend runs at:
 http://localhost:8000
 
-### 2. Chạy Frontend (React + Vite)
-
-Mở terminal mới và thực hiện:
+### 🎨 Frontend Setup
 
 ```bash
 cd frontend
@@ -57,53 +54,77 @@ npm install
 npm run dev
 ```
 
-Frontend sẽ chạy tại:
+Frontend runs at:
+
 http://localhost:5173
+⚠️ Notes (Local setup)
 
-### 3. Sử dụng ứng dụng
+If errors occur:
 
-- Mở trình duyệt và truy cập: http://localhost:5173
-- Nhấn Chọn ảnh để upload ảnh MRI từ máy tính (.jpg, .png, ...)
-- Nhấn Upload Image để hiển thị ảnh lên giao diện
-- Nhấn Run Prediction để gửi ảnh đến AI model
-- Kết quả sẽ hiển thị:
-- Ảnh MRI gốc (input)
-- Ảnh dự đoán có bounding box vùng u não
-
-### ⚠️ Lưu ý
-
-- Backend phải được chạy trước khi mở frontend
-- Nếu gặp lỗi upload, cài thêm dependency:
+Install missing dependency:
 
 ```bash
 pip install python-multipart
 ```
 
-- Nếu lỗi CORS, đảm bảo backend có cấu hình:
-  allow_origins=["http://localhost:5173"]
+Fix CORS:
 
-## 📁 Cấu trúc thư mục chính
+Ensure backend includes:
+
+allow_origins=["http://localhost:5173"]
+
+## 🐳 2. Run with Docker (Recommended for deployment)
+
+📦 Build and start containers
+
+```bash
+docker compose up --build
+```
+
+#### 🌐 Services
+
+Service URL
+
+- Frontend http://localhost:5173
+- Backend API http://localhost:8000
+
+#### 🧠 Docker architecture
+
+React Frontend → FastAPI Backend → YOLOv8 Model → Prediction Output
+
+#### ⚠️ Notes (Docker)
+
+- First run may take longer due to model download
+- Ensure ports 5173 and 8000 are not occupied
+- If changes in Dockerfile → rebuild required:
+  docker compose build
+
+# 📁 Project Structure
 
 ```text
 Brain-Tumor-YOLO-TAF/
 │
-├── app.py
-├── download_model.py
-├── requirements.txt
+├── backend/
+│ ├── ai_server.py
+│ ├── download_model.py
+│ ├── requirements.txt
+│ ├── Dockerfile
+│ └── ...
 │
-├── src/
+├── frontend/
+│ ├── src/
+│ ├── package.json
+│ └── ...
 │
-├── BrainTumorv2_legendary.pth.tar
-│   (sẽ được tạo sau khi chạy download_model.py)
-│
+├── docker-compose.yml
 └── README.md
 ```
 
-## 👨‍💻 Tác giả
+# 👨‍💻 Authors
 
 - Nguyễn Phan Tuấn Duy
 - Võ Thiện Đăng Khoa
 
-## 📌 Ghi chú
+# 📌 Notes
 
-Dự án được thực hiện cho mục đích học tập và nghiên cứu.
+This project is built for educational and research purposes, focusing on applying deep learning to medical image analysis.
